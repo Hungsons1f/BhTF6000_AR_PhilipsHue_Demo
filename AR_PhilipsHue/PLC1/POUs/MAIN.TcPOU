@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.4">
+  <POU Name="MAIN" Id="{e7f8665c-0059-4525-8a94-e2650ae2c275}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	fbHttpClient: FB_IotHttpClient := (sHostName:= '192.168.1.99',bKeepAlive := TRUE, tConnectionTimeout:=T#10S);
+	bExecute: BOOL := TRUE;
+
+	fbPut: FB_HttpPut;
+	fbGet: FB_HttpGet;
+	bPut: BOOL;
+	bGet: BOOL;
+	
+	bwOn: BOOL := TRUE; 
+	nwSat: USINT := 254;
+	nwBri: USINT := 140;
+    nwHue: UINT := 1;
+	nwTrans: UINT := 1;
+	swEffect: STRING[10] := 'none';
+	
+	brOn: BOOL ;
+	nrSat: USINT ;
+	nrBri: USINT;
+    nrHue: UINT;
+	nrTrans: UINT;
+	srEffect: STRING[10] ;
+	
+	fbTimer: ton := (pt:=T#100MS);
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT fbHttpClient.bConfigured THEN
+	fbHttpClient.nHostPort := 80;
+	fbHttpClient.stTLS.bNoServerCertCheck:= TRUE;
+END_IF
+
+IF fbHttpClient.bConfigured THEN
+	fbPut(bSend:= bPut, bOn:= bwOn, nSat:= nwSat, nBri:= nwBri, nHue:= nwHue, nTrans:= nwTrans, sEffect:= swEffect,fbClient:= fbHttpClient);
+	fbGet(bGet := bGet, bOn=> brOn, nSat=> nrSat, nBri=> nrBri, nHue=> nrHue, sEffect=> srEffect,fbClient:= fbHttpClient);
+END_IF
+
+IF bExecute THEN
+	IF bPut THEN
+		bPut:= FALSE;
+		bExecute:= FALSE;
+	END_IF
+	IF bGet THEN
+		bGet := FALSE;
+		bExecute:= FALSE;
+		nrTrans := nwTrans;
+	END_IF
+END_IF
+
+fbHttpClient.Execute();]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="2" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="74" Count="1" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="32" Count="1" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="69" Count="0" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="70" Count="0" />
+      <LineId Id="110" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="38" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

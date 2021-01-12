@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.4">
+  <POU Name="FB_HttpGet" Id="{d0582e48-093d-41ba-ab5f-048f99d0ae89}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_HttpGet
+VAR_INPUT
+	bGet: BOOL;
+END_VAR
+VAR_IN_OUT	
+	fbClient             : FB_IotHttpClient;
+END_VAR
+VAR_OUTPUT
+	bBusy                : BOOL;
+    bError               : BOOL;
+	
+	bOn: BOOL; 
+	nSat: USINT;
+	nBri: USINT;
+    nHue: UINT;
+	sEffect: STRING[10];
+END_VAR
+VAR
+	fbRequest: FB_IotHttpRequest;
+	fbJson: FB_JsonDomParser;
+	fbJsonWriter: FB_JsonSaxWriter;
+	nState: UDINT;
+	RisingEdge: R_TRIG;
+	
+	sContent: STRING(511);
+	sSend: STRING(511);
+	
+	jsonDoc: SJsonValue;
+	jsonState: SJsonValue;
+	jsonOn: SJsonValue;
+	jsonSat: SJsonValue;
+	jsonBri: SJsonValue;
+	jsonHue: SJsonValue;
+	jsonEffect: SJsonValue;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[RisingEdge(CLK:= bGet);
+
+CASE nState OF
+0:
+    IF RisingEdge.Q THEN
+        IF fbRequest.SendRequest(sUri:= '/api/OOrb8w4GpeITNRtK0w5Yf6Ke3p1k6PnnwycVn68a/lights/4',
+            fbClient:= fbClient, eRequestType:= ETcIotHttpRequestType.HTTP_Get, 
+			0, 0, 0) THEN
+			
+            nState:= 1;
+            bBusy:= TRUE;
+            bError:= FALSE;
+        END_IF
+    END_IF
+1:
+    IF NOT fbRequest.bBusy THEN
+        bError:= TRUE;
+        IF NOT fbRequest.bError THEN
+            fbRequest.GetContent(pContent:= ADR(sContent), nContentSize:= SIZEOF(sContent), bSetNullTermination:= TRUE);
+            IF fbRequest.nStatusCode >= 200 AND fbRequest.nStatusCode < 300 THEN
+                jsonDoc:= fbRequest.GetJsonDomContent(fbJson);
+                IF jsonDoc <> 0 THEN
+					
+					IF fbJson.HasMember(jsonDoc,'state') THEN
+						jsonState:= fbJson.FindMember(jsonDoc, 'state');
+						IF fbJson.HasMember(jsonState, 'on') THEN
+							jsonOn:= fbJson.FindMember(jsonState, 'on');
+							IF fbJson.IsBool(jsonOn) THEN
+								bOn:= fbJson.GetBool(jsonOn);
+							END_IF
+						END_IF	
+						IF fbJson.HasMember(jsonState, 'sat') THEN
+							jsonSat:= fbJson.FindMember(jsonState, 'sat');
+							IF fbJson.IsUint(jsonSat) THEN
+								nSat:= UDINT_TO_USINT(fbJson.GetUint(jsonSat));
+							END_IF
+						END_IF	
+						IF fbJson.HasMember(jsonState, 'bri') THEN
+							jsonBri:= fbJson.FindMember(jsonState, 'bri');
+							IF fbJson.IsUint(jsonBri) THEN
+								nBri:= UDINT_TO_USINT(fbJson.GetUint(jsonBri));
+							END_IF
+						END_IF	
+						IF fbJson.HasMember(jsonState, 'hue') THEN
+							jsonHue:= fbJson.FindMember(jsonState, 'hue');
+							IF fbJson.IsUint(jsonHue) THEN
+								nHue:= UDINT_TO_UINT(fbJson.GetUint(jsonHue));
+							END_IF
+						END_IF	
+						IF fbJson.HasMember(jsonState, 'effect') THEN
+							jsonEffect:= fbJson.FindMember(jsonState, 'effect');
+							IF fbJson.IsString(jsonEffect) THEN
+								sEffect:= fbJson.Getstring(jsonEffect);
+							END_IF
+						END_IF	
+						
+						bError:= FALSE;					
+					END_IF
+                END_IF
+            END_IF
+        END_IF
+        nState:= 0;
+        bBusy:= FALSE;
+    END_IF
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_HttpGet">
+      <LineId Id="35" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="36" Count="4" />
+      <LineId Id="73" Count="1" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="44" Count="8" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="57" Count="1" />
+      <LineId Id="97" Count="0" />
+      <LineId Id="80" Count="0" />
+      <LineId Id="84" Count="1" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="90" Count="2" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="110" Count="5" />
+      <LineId Id="126" Count="17" />
+      <LineId Id="109" Count="0" />
+      <LineId Id="100" Count="0" />
+      <LineId Id="83" Count="0" />
+      <LineId Id="62" Count="0" />
+      <LineId Id="64" Count="3" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

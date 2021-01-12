@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.4">
+  <POU Name="FB_HttpPut" Id="{5089f564-9f7f-4a5a-b4ff-73d8fe4b6a94}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_HttpPut
+VAR_INPUT
+	bSend: BOOL;
+	bOn: BOOL; 
+	nSat: USINT;
+	nBri: USINT;
+    nHue: UINT;
+	nTrans: UINT;
+	sEffect: STRING[10];
+		
+END_VAR
+VAR_IN_OUT
+	fbClient             : FB_IotHttpClient;
+END_VAR
+VAR_OUTPUT
+	bBusy                : BOOL;
+    bError               : BOOL;
+END_VAR
+VAR
+	fbRequest: FB_IotHttpRequest;
+	//fbJson: FB_JsonDomParser;
+	fbJsonWriter: FB_JsonSaxWriter;
+	nState: UDINT;
+	RisingEdge: R_TRIG;
+	
+	sContent: STRING(511);
+	sSend: STRING(511);
+	
+	//jsonDoc: SJsonValue;
+	//jsonVal: SJsonValue;
+	//sResultValue: STRING;
+
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[RisingEdge(clk:= bSend);
+
+CASE nState OF
+0: 
+	fbJsonWriter.StartObject();
+	fbJsonWriter.AddKey('on');
+	fbJsonWriter.AddBool(bOn);	
+	fbJsonWriter.AddKey('sat');
+	fbJsonWriter.AddUdint(nSat);
+	fbJsonWriter.AddKey('bri');
+	fbJsonWriter.AddUdint(nBri);
+	fbJsonWriter.AddKey('hue');
+	fbJsonWriter.AddUdint(nHue);
+	fbJsonWriter.AddKey('transitiontime');
+	fbJsonWriter.AddUdint(nTrans);
+	fbJsonWriter.AddKey('effect');
+	fbJsonWriter.AddString(sEffect);
+	fbJsonWriter.EndObject();
+	sSend:= fbJsonWriter.GetDocument();
+	fbJsonWriter.ResetDocument();
+	
+	IF RisingEdge.Q THEN
+		IF fbRequest.SendRequest(sUri:='/api/OOrb8w4GpeITNRtK0w5Yf6Ke3p1k6PnnwycVn68a/lights/4/state', 
+			fbClient:=fbClient, eRequestType:= ETcIotHttpRequestType.HTTP_PUT,
+			pContent:= ADR(sSend), nContentSize:= LEN2(ADR(sSend)), 0) THEN
+			
+			nState:= 1;
+			bBusy:= TRUE;
+			bError:= FALSE;
+		END_IF
+	END_IF
+	
+1:
+	IF NOT fbRequest.bBusy THEN
+		bError:= TRUE;
+		IF NOT fbRequest.bError THEN
+			fbRequest.GetContent(pContent:= ADR(sContent), nContentSize:= SIZEOF(sContent), bSetNullTermination:= TRUE);
+			IF fbRequest.nStatusCode >= 200 AND fbRequest.nStatusCode < 300 THEN              
+                bError:= FALSE;    
+            END_IF
+        END_IF
+        nState:= 0;
+        bBusy:= FALSE;
+	END_IF
+END_CASE
+	]]></ST>
+    </Implementation>
+    <LineIds Name="FB_HttpPut">
+      <LineId Id="9" Count="0" />
+      <LineId Id="181" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="219" Count="1" />
+      <LineId Id="44" Count="5" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="115" Count="0" />
+      <LineId Id="222" Count="1" />
+      <LineId Id="50" Count="5" />
+      <LineId Id="257" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="142" Count="0" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="60" Count="1" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="62" Count="3" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="70" Count="0" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="80" Count="3" />
+      <LineId Id="179" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="36" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
